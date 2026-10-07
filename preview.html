@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SetterScraper UI Options</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      display: flex;
+      gap: 32px;
+      padding: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .label {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .col { display: flex; flex-direction: column; }
+
+    /* ── shared popup shell ── */
+    .popup { width: 280px; overflow: hidden; border-radius: 12px; }
+
+    /* ══════════════════════════════════════════
+       OPTION 1 — IRON MAN HUD
+    ══════════════════════════════════════════ */
+    .hud {
+      background: #07101f;
+      border: 1px solid #1a3a5c;
+      font-family: 'Courier New', monospace;
+      position: relative;
+    }
+    .hud::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 28px, rgba(0,150,255,0.03) 28px, rgba(0,150,255,0.03) 29px
+      );
+      pointer-events: none;
+    }
+    .hud .header {
+      background: linear-gradient(135deg, #0a1628 0%, #0d2040 100%);
+      border-bottom: 1px solid #f59e0b;
+      padding: 12px 14px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hud .h-icon {
+      width: 28px; height: 28px;
+      border: 1.5px solid #f59e0b;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      color: #f59e0b;
+      box-shadow: 0 0 8px rgba(245,158,11,0.4);
+    }
+    .hud .h-title { color: #f59e0b; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .hud .h-sub { color: #4a7fa8; font-size: 9px; letter-spacing: 1.5px; margin-top: 2px; text-transform: uppercase; }
+    .hud .body { padding: 12px 14px; }
+    .hud .stats {
+      display: flex; gap: 8px; margin-bottom: 10px;
+    }
+    .hud .stat {
+      flex: 1;
+      border: 1px solid #1a3a5c;
+      border-radius: 4px;
+      padding: 8px;
+      text-align: center;
+      background: rgba(0,80,160,0.08);
+    }
+    .hud .stat-n { font-size: 22px; font-weight: 700; color: #f59e0b; line-height: 1; }
+    .hud .stat-l { font-size: 8px; color: #4a7fa8; margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; }
+    .hud .status-box {
+      border: 1px solid #1a3a5c;
+      border-radius: 4px;
+      padding: 9px 11px;
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,80,160,0.05);
+    }
+    .hud .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+      animation: hud-pulse 1.2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes hud-pulse { 0%,100%{opacity:1;box-shadow:0 0 6px #f59e0b} 50%{opacity:0.4;box-shadow:0 0 2px #f59e0b} }
+    .hud .status-text { font-size: 11px; color: #7ab0d4; letter-spacing: 0.5px; line-height: 1.4; }
+    .hud .btn {
+      width: 100%; padding: 10px; border: 1.5px solid #f59e0b;
+      border-radius: 4px; font-family: 'Courier New', monospace;
+      font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 2px;
+      background: transparent; color: #f59e0b; text-transform: uppercase;
+      margin-bottom: 7px;
+      box-shadow: 0 0 10px rgba(245,158,11,0.15), inset 0 0 10px rgba(245,158,11,0.05);
+      transition: all 0.2s;
+    }
+    .hud .btn:hover { background: rgba(245,158,11,0.1); box-shadow: 0 0 16px rgba(245,158,11,0.3); }
+    .hud .sheet-link {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 1px;
+      color: #4a7fa8; text-decoration: none;
+      border: 1px solid #1a3a5c; border-radius: 4px; padding: 6px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .hud .footer { font-size: 9px; color: #2a4a6a; text-align: center; letter-spacing: 1px; padding-bottom: 4px; }
+
+    /* ══════════════════════════════════════════
+       OPTION 2 — PURPLE GLOW
+    ══════════════════════════════════════════ */
+    .purple {
+      background: #08050f;
+      border: 1px solid #3b1d6e;
+      box-shadow: 0 0 30px rgba(124,58,237,0.15);
+    }
+    .purple .header {
+      background: linear-gradient(135deg, #0f0720 0%, #1a0d35 100%);
+      border-bottom: 1px solid #4c1d95;
+      padding: 12px 14px 10px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .purple .h-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 0 12px rgba(168,85,247,0.5);
+    }
+    .purple .h-title { color: #e9d5ff; font-size: 14px; font-weight: 700; }
+    .purple .h-sub { color: #7c3aed; font-size: 10px; margin-top: 1px; }
+    .purple .body { padding: 12px 14px; }
+    .purple .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+    .purple .stat {
+      flex: 1; border-radius: 8px; padding: 8px; text-align: center;
+      background: rgba(124,58,237,0.1);
+      border: 1px solid rgba(124,58,237,0.25);
+    }
+    .purple .stat-n { font-size: 22px; font-weight: 700; color: #a855f7; line-height: 1; }
+    .purple .stat-l { font-size: 9px; color: #6d28d9; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .purple .status-box {
+      background: rgba(124,58,237,0.07);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 8px; padding: 9px 11px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .purple .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #a855f7; flex-shrink: 0;
+      box-shadow: 0 0 8px #a855f7;
+      animation: pur-pulse 1.2s infinite;
+    }
+    @keyframes pur-pulse { 0%,100%{box-shadow:0 0 8px #a855f7;opacity:1} 50%{box-shadow:0 0 2px #a855f7;opacity:0.5} }
+    .purple .status-text { font-size: 12px; color: #c4b5fd; line-height: 1.4; }
+    .purple .btn {
+      width: 100%; padding: 10px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff; margin-bottom: 7px;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+      transition: all 0.2s;
+    }
+    .purple .btn:hover { box-shadow: 0 4px 28px rgba(168,85,247,0.6); }
+    .purple .sheet-link {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #a855f7; text-decoration: none;
+      background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 8px; padding: 7px; margin-bottom: 8px;
+    }
+    .purple .footer { font-size: 10px; color: #4c1d95; text-align: center; padding-bottom: 4px; }
+
+    /* ══════════════════════════════════════════
+       OPTION 3 — CLEAN SLATE
+    ══════════════════════════════════════════ */
+    .clean {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .clean .header {
+      background: #4f46e5;
+      padding: 14px 16px 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .clean .h-icon {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .clean .h-title { color: #fff; font-size: 14px; font-weight: 700; }
+    .clean .h-sub { color: rgba(255,255,255,0.65); font-size: 10px; margin-top: 1px; }
+    .clean .body { padding: 12px 14px; }
+    .clean .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+    .clean .stat {
+      flex: 1; background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; padding: 8px; text-align: center;
+    }
+    .clean .stat-n { font-size: 22px; font-weight: 700; color: #1e293b; line-height: 1; }
+    .clean .stat-l { font-size: 9px; color: #94a3b8; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .clean .status-box {
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; padding: 9px 11px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .clean .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4f46e5; flex-shrink: 0;
+      animation: clean-pulse 1.2s infinite;
+    }
+    @keyframes clean-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .clean .status-text { font-size: 12px; color: #475569; line-height: 1.4; }
+    .clean .btn {
+      width: 100%; padding: 10px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: #4f46e5; color: #fff; margin-bottom: 7px;
+      transition: background 0.15s;
+    }
+    .clean .btn:hover { background: #4338ca; }
+    .clean .sheet-link {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #4f46e5; text-decoration: none;
+      background: #eef2ff; border-radius: 8px; padding: 7px; margin-bottom: 8px;
+    }
+    .clean .footer { font-size: 10px; color: #cbd5e1; text-align: center; padding-bottom: 4px; }
+
+    /* ══════════════════════════════════════════
+       OPTION 4 — MIDNIGHT BLUE (sleek dark)
+    ══════════════════════════════════════════ */
+    .midnight {
+      background: #0f1117;
+      border: 1px solid #1e2333;
+    }
+    .midnight .header {
+      background: linear-gradient(135deg, #141824 0%, #1a2035 100%);
+      border-bottom: 1px solid #1e2d4a;
+      padding: 12px 14px 10px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .midnight .h-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 0 10px rgba(59,130,246,0.35);
+    }
+    .midnight .h-title { color: #e2e8f0; font-size: 14px; font-weight: 700; }
+    .midnight .h-sub { color: #3b82f6; font-size: 10px; margin-top: 1px; }
+    .midnight .body { padding: 12px 14px; }
+    .midnight .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+    .midnight .stat {
+      flex: 1; background: #141824; border: 1px solid #1e2d4a;
+      border-radius: 8px; padding: 8px; text-align: center;
+    }
+    .midnight .stat-n { font-size: 22px; font-weight: 700; color: #3b82f6; line-height: 1; }
+    .midnight .stat-l { font-size: 9px; color: #334155; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .midnight .status-box {
+      background: #141824; border: 1px solid #1e2d4a;
+      border-radius: 8px; padding: 9px 11px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .midnight .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #3b82f6; flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(59,130,246,0.7);
+      animation: mid-pulse 1.2s infinite;
+    }
+    @keyframes mid-pulse { 0%,100%{box-shadow:0 0 6px rgba(59,130,246,0.7);opacity:1} 50%{box-shadow:0 0 2px rgba(59,130,246,0.3);opacity:0.5} }
+    .midnight .status-text { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+    .midnight .btn {
+      width: 100%; padding: 10px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff; margin-bottom: 7px;
+      box-shadow: 0 2px 16px rgba(37,99,235,0.3);
+      transition: all 0.2s;
+    }
+    .midnight .btn:hover { box-shadow: 0 2px 22px rgba(37,99,235,0.5); }
+    .midnight .sheet-link {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #3b82f6; text-decoration: none;
+      background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 8px; padding: 7px; margin-bottom: 8px;
+    }
+    .midnight .footer { font-size: 10px; color: #1e2d4a; text-align: center; padding-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Iron Man HUD -->
+  <div class="col">
+    <div class="label">① Iron Man HUD</div>
+    <div class="popup hud">
+      <div class="header">
+        <div class="h-icon">⚡</div>
+        <div>
+          <div class="h-title">SetterScraper</div>
+          <div class="h-sub">Nuvohub → Sheets</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="stats">
+          <div class="stat"><div class="stat-n">103</div><div class="stat-l">Clients</div></div>
+          <div class="stat"><div class="stat-n">4</div><div class="stat-l">New</div></div>
+        </div>
+        <div class="status-box">
+          <div class="dot"></div>
+          <div class="status-text">Writing 4 new clients to sheet...</div>
+        </div>
+        <button class="btn">▶ Sync Now</button>
+        <a class="sheet-link" href="#">⬡ Open Your Sheet</a>
+        <div class="footer">LAST SYNC // 2m ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Purple Glow -->
+  <div class="col">
+    <div class="label">② Purple Glow</div>
+    <div class="popup purple">
+      <div class="header">
+        <div class="h-icon">⚡</div>
+        <div>
+          <div class="h-title">SetterScraper</div>
+          <div class="h-sub">Nuvohub → Google Sheets</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="stats">
+          <div class="stat"><div class="stat-n">103</div><div class="stat-l">Clients</div></div>
+          <div class="stat"><div class="stat-n">4</div><div class="stat-l">New</div></div>
+        </div>
+        <div class="status-box">
+          <div class="dot"></div>
+          <div class="status-text">Writing 4 new clients to sheet...</div>
+        </div>
+        <button class="btn">Sync Now</button>
+        <a class="sheet-link" href="#">📊 Open Your Sheet</a>
+        <div class="footer">Last synced 2 minutes ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Clean Slate -->
+  <div class="col">
+    <div class="label">③ Clean Slate</div>
+    <div class="popup clean">
+      <div class="header">
+        <div class="h-icon">⚡</div>
+        <div>
+          <div class="h-title">SetterScraper</div>
+          <div class="h-sub">Nuvohub → Google Sheets</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="stats">
+          <div class="stat"><div class="stat-n">103</div><div class="stat-l">Clients</div></div>
+          <div class="stat"><div class="stat-n">4</div><div class="stat-l">New</div></div>
+        </div>
+        <div class="status-box">
+          <div class="dot"></div>
+          <div class="status-text">Writing 4 new clients to sheet...</div>
+        </div>
+        <button class="btn">Sync Now</button>
+        <a class="sheet-link" href="#">📊 Open Your Sheet</a>
+        <div class="footer">Last synced 2 minutes ago</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Midnight Blue -->
+  <div class="col">
+    <div class="label">④ Midnight Blue</div>
+    <div class="popup midnight">
+      <div class="header">
+        <div class="h-icon">⚡</div>
+        <div>
+          <div class="h-title">SetterScraper</div>
+          <div class="h-sub">Nuvohub → Google Sheets</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="stats">
+          <div class="stat"><div class="stat-n">103</div><div class="stat-l">Clients</div></div>
+          <div class="stat"><div class="stat-n">4</div><div class="stat-l">New</div></div>
+        </div>
+        <div class="status-box">
+          <div class="dot"></div>
+          <div class="status-text">Writing 4 new clients to sheet...</div>
+        </div>
+        <button class="btn">Sync Now</button>
+        <a class="sheet-link" href="#">📊 Open Your Sheet</a>
+        <div class="footer">Last synced 2 minutes ago</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
