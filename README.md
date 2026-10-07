@@ -4,6 +4,10 @@ SetterScraper is a Chrome extension that syncs a logged-in Nuvohub client list i
 
 It was built for sales reps who want one click to turn their Nuvohub pipeline into a working spreadsheet with client details, consultation dates, project managers, follow-ups, and basic performance stats.
 
+## What is Nuvohub?
+
+Nuvohub is the CRM and project-management platform used by residential solar teams to manage leads, clients, appointments, projects, and assigned project managers. SetterScraper turns that working pipeline into a Google Sheet that is easier to review, update, and use for daily follow-up.
+
 ## What it does
 
 - Reads the current Nuvohub session from the tab you already have open.
@@ -33,13 +37,13 @@ The extension is intentionally tied to the Nuvohub account structure and may nee
 
 ## Files
 
-- `manifest.json` — extension permissions, OAuth configuration, and service-worker registration
-- `background.js` — Nuvohub extraction, Firestore reads, Google Sheets sync, and spreadsheet formatting
-- `content.js` — reads the active Firebase session from the Nuvohub tab on request
-- `popup.html` / `popup.js` — setup, sync controls, progress, and status UI
-- `preview.html` — static visual preview of the popup states
-- `get-key.js` — local helper for deriving a Chrome extension public key from a private PEM
-- `DEV_SETUP.md` — longer setup and Chrome Web Store notes
+- `manifest.json` â€” extension permissions, OAuth configuration, and service-worker registration
+- `background.js` â€” Nuvohub extraction, Firestore reads, Google Sheets sync, and spreadsheet formatting
+- `content.js` â€” reads the active Firebase session from the Nuvohub tab on request
+- `popup.html` / `popup.js` â€” setup, sync controls, progress, and status UI
+- `preview.html` â€” static visual preview of the popup states
+- `get-key.js` â€” local helper for deriving a Chrome extension public key from a private PEM
+- `DEV_SETUP.md` â€” longer setup and Chrome Web Store notes
 
 ## Permissions
 
