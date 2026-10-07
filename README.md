@@ -1,59 +1,55 @@
 # SetterScraper
 
-SetterScraper is a Chrome extension that syncs a logged-in Nuvohub client list into a Google Sheet.
+SetterScraper is a Chrome Manifest V3 extension that syncs records from a configured CRM into Google Sheets.
 
-It was built for sales reps who want one click to turn their Nuvohub pipeline into a working spreadsheet with client details, consultation dates, project managers, follow-ups, and basic performance stats.
+It was built for sales teams that want a single action to turn a CRM pipeline into a working spreadsheet with client details, appointments, follow-ups, and basic performance summaries.
 
-## What is Nuvohub?
-
-Nuvohub is the CRM and project-management platform used by residential solar teams to manage leads, clients, appointments, projects, and assigned project managers. SetterScraper turns that working pipeline into a Google Sheet that is easier to review, update, and use for daily follow-up.
+> **Public portfolio version:** company-specific URLs, database project IDs, authentication-store names, collection names, and field mappings have been replaced with placeholders. The public repository documents the architecture without exposing the original company integration. It will not connect to a real CRM until you create a private `config.js` with the appropriate values.
 
 ## What it does
 
-- Reads the current Nuvohub session from the tab you already have open.
-- Pulls client and project information from the Nuvohub account.
+- Reads the current authenticated CRM session from the tab you already have open.
+- Pulls records, related projects, assigned users, and appointment information.
 - Creates or updates a Google Sheet for the pipeline.
-- Adds tabs for all clients, today&rsquo;s sets, follow-ups, stats, and draft messages.
-- Tracks new clients and preserves the spreadsheet across future syncs.
+- Adds tabs for records, today&rsquo;s appointments, follow-ups, stats, and draft messages.
+- Tracks new records and preserves the spreadsheet across future syncs.
 - Shows sync progress and the sheet link in the extension popup.
 
-## How it works
+## Architecture
 
-The extension uses Manifest V3 with a service worker. A content script reads the Firebase session token from the authenticated Nuvohub tab when a sync starts. The service worker uses that token to retrieve client data, then uses Chrome&rsquo;s Google Identity API to create and update the user&rsquo;s spreadsheet.
+The extension uses a Manifest V3 service worker. When a sync starts, the worker reads the active session from the CRM tab, queries the configured document-database API, normalizes the records, and writes them through the Google Sheets API.
 
-No application server is required. Tokens are kept in memory during a sync, while the extension stores only local sync state such as the spreadsheet ID, last sync time, and summary counts.
+There is no application server. Tokens are kept in memory during a sync, while the extension stores only local sync state such as the spreadsheet ID, last sync time, and summary counts.
 
-## Install for development
+## Local setup
 
-1. Create or select a Google Cloud project.
-2. Enable the Google Sheets API and Google Drive API.
-3. Create a Chrome App OAuth client and add the extension ID as an authorized application.
-4. Put that OAuth client ID in `manifest.json` under `oauth2.client_id`.
-5. Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this folder.
-6. Open `https://nuvohub.ca`, sign in, click the SetterScraper toolbar icon, and complete the setup screen.
-7. Click **Sync Now**.
+1. Copy `config.example.js` to `config.js`.
+2. Replace the placeholder CRM origin, document API endpoint, auth-store names, collection names, and field mappings in `config.js`.
+3. Replace the placeholder OAuth client ID in `manifest.json` and update the CRM host permission.
+4. In Chrome, open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this folder.
+5. Open the configured CRM, sign in, click the SetterScraper toolbar icon, and complete the setup screen.
+6. Click **Sync Now**.
 
-The extension is intentionally tied to the Nuvohub account structure and may need updates if Nuvohub changes its data model or authentication flow.
+The private `config.js` file is ignored by Git. Do not commit it, OAuth credentials, private keys, session exports, or generated customer data.
 
 ## Files
 
-- `manifest.json` â€” extension permissions, OAuth configuration, and service-worker registration
-- `background.js` â€” Nuvohub extraction, Firestore reads, Google Sheets sync, and spreadsheet formatting
-- `content.js` â€” reads the active Firebase session from the Nuvohub tab on request
-- `popup.html` / `popup.js` â€” setup, sync controls, progress, and status UI
-- `preview.html` â€” static visual preview of the popup states
-- `get-key.js` â€” local helper for deriving a Chrome extension public key from a private PEM
-- `DEV_SETUP.md` â€” longer setup and Chrome Web Store notes
+- `manifest.json` — extension permissions, OAuth configuration, and service-worker registration
+- `config.example.js` — anonymized integration configuration template
+- `background.js` — CRM extraction, document-database reads, Google Sheets sync, and spreadsheet formatting
+- `popup.html` / `popup.js` — setup, sync controls, progress, and status UI
+- `preview.html` — static visual preview of popup states
+- `get-key.js` — local helper for deriving a Chrome extension public key from a private PEM
 
 ## Permissions
 
-The extension requests access to the active Nuvohub account, Google Sheets, Google Drive file creation, browser tabs, scripting, local storage, and Google OAuth. It only runs the Nuvohub extraction when the user starts a sync.
+The extension requests access to the configured CRM, Google Sheets, Google Drive file creation, browser tabs, scripting, local storage, and Google OAuth. It only reads CRM data when the user starts a sync.
 
-Review the permissions and the source before installing it in an account containing customer information.
+Review the permissions and source before installing it in an account containing customer information.
 
 ## Privacy
 
-The extension sends client data to the Google Sheet created in the signed-in Google account. It does not include a hosted analytics service or a separate application backend. Do not share generated spreadsheets publicly.
+The extension sends records to the Google Sheet created in the signed-in Google account. It does not use hosted analytics or a separate application backend. Do not share generated spreadsheets publicly.
 
 ## License
 

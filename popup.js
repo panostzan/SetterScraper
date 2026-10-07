@@ -59,7 +59,7 @@ async function init() {
     footerEl.textContent    = formatTime(lastSync);
     setIdle('done', `${lastTotal ?? '?'} clients synced.`);
   } else {
-    setIdle('', 'Ready — open nuvohub.ca then click Sync.');
+    setIdle('', 'Ready — open your CRM then click Sync.');
   }
 }
 

@@ -1,26 +1,28 @@
-// SetterScraper — background service worker
-// Mirrors panoshub's sync logic: Firestore API → Google Sheets.
+importScripts('config.js');
 
-const FB_BASE  = 'https://firestore.googleapis.com/v1/projects/nuvo-hub/databases/(default)/documents';
-const FB_QUERY = `${FB_BASE}:runQuery`;
+const CONFIG = globalThis.SETTERSCRAPER_CONFIG;
+if (!CONFIG) throw new Error('Missing config.js � copy config.example.js and fill in the integration values.');
+const DB_BASE = CONFIG.documentApiBase;
+const DB_QUERY = `${DB_BASE}:runQuery`;
+const SCHEMA = CONFIG.schema;
 
-// Column layout — matches panoshub exactly.
+// Column layout — matches the original internal sync tool exactly.
 // Manual columns (B, H–L) are NEVER overwritten on existing rows.
 const HEADERS = [
-  'Client Name',        // A  0  — Firestore
+  'Client Name',        // A  0  — document database
   'Stage',              // B  1  — Manual (dropdown)
-  'Phone',              // C  2  — Firestore
-  'Email',              // D  3  — Firestore
-  'Address',            // E  4  — Firestore
-  'Consultation Date',  // F  5  — Firestore
-  'PM / Closer',        // G  6  — Firestore
+  'Phone',              // C  2  — document database
+  'Email',              // D  3  — document database
+  'Address',            // E  4  — document database
+  'Consultation Date',  // F  5  — document database
+  'PM / Closer',        // G  6  — document database
   'Notes',              // H  7  — Manual
   '3 Day',              // I  8  — Manual
   '7 Day',              // J  9  — Manual
   '2 Weeks',            // K  10 — Manual
   'Interest Level',     // L  11 — Manual
-  'Time',               // M  12 — Firestore
-  'Nuvohub ID',         // N  13 — Firestore (hidden, used for dedup)
+  'Time',               // M  12 — document database
+  'CRM ID',         // N  13 — document database (hidden, used for dedup)
 ];
 
 const STAGES = ['Unqualified', 'Qualified', 'Reschedule', 'Cancel', 'No Show', 'Dead', 'Closed Sale'];
@@ -53,7 +55,7 @@ function getUserId(token) {
 }
 
 
-// ── Firestore field extractors ────────────────────────────────────
+// ── document database field extractors ────────────────────────────────────
 
 function fval(field = {}) {
   for (const k of ['stringValue', 'integerValue', 'doubleValue', 'booleanValue', 'timestampValue']) {
@@ -101,38 +103,38 @@ async function safeFetch(url, opts) {
 }
 
 
-// ── Firestore API ─────────────────────────────────────────────────
+// ── document database API ─────────────────────────────────────────────────
 
 async function fetchAllClients(fbToken, userId) {
   const headers = { 'Authorization': `Bearer ${fbToken}`, 'Content-Type': 'application/json' };
   const allDocs = [];
   let offset    = 0;
 
-  // Paginate in batches of 200 (Firestore limit)
+  // Paginate in batches of 200 (document database limit)
   while (true) {
-    const r = await safeFetch(FB_QUERY, {
+    const r = await safeFetch(DB_QUERY, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         structuredQuery: {
-          from:  [{ collectionId: 'clients' }],
-          where: { fieldFilter: { field: { fieldPath: 'createdByUserId' }, op: 'EQUAL', value: { stringValue: userId } } },
+          from:  [{ collectionId: SCHEMA.collections.clients }],
+          where: { fieldFilter: { field: { fieldPath: SCHEMA.fields.createdByUserId }, op: 'EQUAL', value: { stringValue: userId } } },
           limit: 200,
           offset,
           // No orderBy — combining where on one field + orderBy on another requires
-          // a composite Firestore index that doesn't exist. Sort in JS after fetch.
+          // a composite document database index that doesn't exist. Sort in JS after fetch.
         },
       }),
     });
     if (r.status === 401 || r.status === 403) {
-      throw new Error('Your Nuvohub session has expired — refresh nuvohub.ca and try again');
+      throw new Error('Your CRM session has expired — refresh your CRM and try again');
     }
     if (r.status === 429) {
-      throw new Error('Nuvohub is rate limiting — wait a moment and try again');
+      throw new Error('CRM is rate limiting — wait a moment and try again');
     }
     if (!r.ok) {
       const body = await r.text();
-      throw new Error(`Firestore error ${r.status}: ${body}`);
+      throw new Error(`document database error ${r.status}: ${body}`);
     }
     const data = await r.json();
     const docs = data.filter(d => d.document);
@@ -153,7 +155,7 @@ async function fetchAllClients(fbToken, userId) {
 
 async function fetchProject(fbToken, clientId) {
   try {
-    const r = await fetch(`${FB_BASE}/clients/${clientId}/projects?pageSize=1`, {
+    const r = await fetch(`${DB_BASE}/${SCHEMA.collections.clients}/${clientId}/${SCHEMA.collections.projects}?pageSize=1`, {
       headers: { Authorization: `Bearer ${fbToken}` },
     });
     if (!r.ok) return null;
@@ -166,17 +168,17 @@ async function fetchProject(fbToken, clientId) {
 
 async function fetchUserName(fbToken, userId) {
   try {
-    const r = await fetch(`${FB_BASE}/users/${userId}`, {
+    const r = await fetch(`${DB_BASE}/${SCHEMA.collections.users}/${userId}`, {
       headers: { Authorization: `Bearer ${fbToken}` },
     });
     if (!r.ok) return '';
-    return fval((await r.json()).fields?.name ?? {});
+    return fval((await r.json()).fields?.[SCHEMA.fields.userName] ?? {});
   } catch {
     return '';
   }
 }
 
-// Fetch projects 10 at a time (mirrors panoshub's semaphore of 10)
+// Fetch projects 10 at a time (limits concurrent project requests to batches of 10)
 async function fetchAllProjects(fbToken, clientIds) {
   const results = [];
   for (let i = 0; i < clientIds.length; i += 10) {
@@ -199,34 +201,34 @@ function buildClientData(clientDocs, projectDocs, nameCache) {
     const clientId = clientDocs[i].document.name.split('/').pop();
     const proj     = projectDocs[i];
 
-    const name  = `${fval(cf.firstName ?? {})} ${fval(cf.lastName ?? {})}`.trim();
-    const phone = fval(cf.phoneNumber ?? {});
-    const email = fval(cf.email ?? {});
+    const name  = `${fval(cf[SCHEMA.fields.firstName] ?? {})} ${fval(cf[SCHEMA.fields.lastName] ?? {})}`.trim();
+    const phone = fval(cf[SCHEMA.fields.phone] ?? {});
+    const email = fval(cf[SCHEMA.fields.email] ?? {});
 
     let address = '', pm = '', consultationDate = '', consultationTime = '';
 
     if (proj) {
       const pf   = proj.fields ?? {};
-      const addr = fmap(pf.address ?? {});
+      const addr = fmap(pf[SCHEMA.fields.address] ?? {});
       address = [
-        fval(addr.street     ?? {}),
-        fval(addr.city       ?? {}),
-        fval(addr.province   ?? {}),
-        fval(addr.postalCode ?? {}),
+        fval(addr[SCHEMA.fields.street]     ?? {}),
+        fval(addr[SCHEMA.fields.city]       ?? {}),
+        fval(addr[SCHEMA.fields.province]   ?? {}),
+        fval(addr[SCHEMA.fields.postalCode] ?? {}),
       ].filter(Boolean).join(', ');
 
-      const consult = fmap(pf.consultation ?? {});
-      pm = nameCache.get(fval(consult.pmUserId ?? {})) || '';
+      const consult = fmap(pf[SCHEMA.fields.consultation] ?? {});
+      pm = nameCache.get(fval(consult[SCHEMA.fields.pmUserId] ?? {})) || '';
 
-      const scheduledStart = fval(consult.scheduledStart ?? {});
+      const scheduledStart = fval(consult[SCHEMA.fields.scheduledStart] ?? {});
       if (scheduledStart) {
         // Confirmed appointment — UTC timestamp
         [consultationDate, consultationTime] = parseConsultation(scheduledStart);
       } else {
         // Intake phase — PM not yet assigned, date stored in preferences
-        const prefs = fmap(consult.preferences ?? {});
-        consultationDate = fval(prefs.date ?? {});
-        const startTime  = fval(prefs.startTime ?? {});
+        const prefs = fmap(consult[SCHEMA.fields.preferences] ?? {});
+        consultationDate = fval(prefs[SCHEMA.fields.date] ?? {});
+        const startTime  = fval(prefs[SCHEMA.fields.startTime] ?? {});
         if (consultationDate && startTime) {
           try {
             const [h, m] = startTime.split(':').map(Number);
@@ -334,7 +336,7 @@ async function setupSpreadsheet(googleToken, spreadsheetId, sendProgress) {
   }
   const cid = clientsSheet.properties.sheetId;
 
-  // Widths match panoshub.gs: A–G same, then Notes/manual cols, Time, hidden ID
+  // Widths match the original internal sync tool.gs: A–G same, then Notes/manual cols, Time, hidden ID
   const colWidths = [185, 165, 125, 185, 245, 135, 145, 210, 65, 65, 75, 130, 90, 80];
 
   const requests = [
@@ -360,7 +362,7 @@ async function setupSpreadsheet(googleToken, spreadsheetId, sendProgress) {
         fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)',
       },
     },
-    // Hide Nuvohub ID column (N = index 13)
+    // Hide CRM ID column (N = index 13)
     {
       updateDimensionProperties: {
         range: { sheetId: cid, dimension: 'COLUMNS', startIndex: 13, endIndex: 14 },
@@ -527,7 +529,7 @@ async function writeClients(googleToken, spreadsheetId, allData, sendProgress) {
   let nextRow = idValues.length + 2;
   const updates = [];
 
-  // Existing rows — only update Firestore-sourced columns.
+  // Existing rows — only update document database-sourced columns.
   // Never touch B (Stage), H–L (Notes, checkboxes, Interest Level).
   for (const d of toUpdate) {
     const row = rowById[d.clientId];
@@ -548,7 +550,7 @@ async function writeClients(googleToken, spreadsheetId, allData, sendProgress) {
         d.consultationDate, d.pm,
         '', '', '', '', '',  // H–L: Notes, 3 Day, 7 Day, 2 Weeks, Interest Level
         d.consultationTime,  // M: Time
-        d.clientId,          // N: Nuvohub ID (hidden)
+        d.clientId,          // N: CRM ID (hidden)
       ]],
     });
     nextRow++;
@@ -581,9 +583,9 @@ async function writeClients(googleToken, spreadsheetId, allData, sendProgress) {
 // ── Main sync ─────────────────────────────────────────────────────
 
 async function doSync(sendProgress) {
-  sendProgress('Connecting to Nuvohub...', 5);
-  const tabs = await chrome.tabs.query({ url: 'https://nuvohub.ca/*' });
-  if (!tabs.length) throw new Error('Open nuvohub.ca and log in, then click Sync');
+  sendProgress('Connecting to CRM...', 5);
+  const tabs = await chrome.tabs.query({ url: `${CONFIG.crmOrigin}/*` });
+  if (!tabs.length) throw new Error('Open your CRM and log in, then click Sync');
 
   // Inject token extraction directly into the tab on demand.
   let tokenResult;
@@ -591,12 +593,12 @@ async function doSync(sendProgress) {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       func: () => new Promise(resolve => {
-        const req = indexedDB.open('firebaseLocalStorageDb');
+        const req = indexedDB.open(CONFIG.auth.databaseName);
         req.onerror = () => resolve({ error: 'indexeddb_error' });
         req.onsuccess = e => {
           const db = e.target.result;
-          const tx = db.transaction('firebaseLocalStorage', 'readonly');
-          const all = tx.objectStore('firebaseLocalStorage').getAll();
+          const tx = db.transaction(CONFIG.auth.storeName, 'readonly');
+          const all = tx.objectStore(CONFIG.auth.storeName).getAll();
           all.onsuccess = () => {
             const entry = all.result.find(i => i.value?.stsTokenManager);
             resolve(entry
@@ -610,19 +612,19 @@ async function doSync(sendProgress) {
     });
     tokenResult = result;
   } catch {
-    throw new Error('nuvohub.ca is still loading — wait for it to finish and try again');
+    throw new Error('your CRM is still loading — wait for it to finish and try again');
   }
 
-  if (tokenResult.error === 'not_logged_in') throw new Error('Log in to Nuvohub first');
-  if (tokenResult.error) throw new Error(`Nuvohub session error: ${tokenResult.error}`);
+  if (tokenResult.error === 'not_logged_in') throw new Error('Log in to CRM first');
+  if (tokenResult.error) throw new Error(`CRM session error: ${tokenResult.error}`);
 
   const fbToken = tokenResult.token;
   const userId  = getUserId(fbToken);
-  if (!userId) throw new Error('Could not read your Nuvohub user ID');
+  if (!userId) throw new Error('Could not read your CRM user ID');
 
   sendProgress('Fetching your clients...', 15);
   const clientDocs = await fetchAllClients(fbToken, userId);
-  if (!clientDocs.length) throw new Error('No clients found in your Nuvohub account');
+  if (!clientDocs.length) throw new Error('No clients found in your CRM account');
 
   sendProgress(`${clientDocs.length} clients found — loading details...`, 30);
   const clientIds   = clientDocs.map(d => d.document.name.split('/').pop());

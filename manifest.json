@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "SetterScraper",
   "version": "1.0.0",
-  "description": "Sync your Nuvohub clients to Google Sheets automatically. No setup required.",
+  "description": "Sync CRM records to Google Sheets automatically.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0jaZGfE3vSXbjREgivXRS9zr7/xEjSBl+DVar+akvUR26Hl32I6SfzaJFpwvFoMkffT8geFXjtdGNtDB55yiWrAY8D9rBsjUn3XfyGQ4eZ/RE0wPnQ+tX3Q/EBE7CCJou/2PdZ1QwvUcQseqmuxeFVwmTkuSZDJd2AmUJMmXwrw5zHw4+d0u+in74QOt/uJaVaJV8ROhkmU2PU5/aWmD/bUjdOm700rOPpMFyrDvRrhVbW4eFNRMnrkZa3arY0XUaCD5xbJ3vtjN63sy7s1smSWO2AxrfCiF0rKNglXUlfpuwgzFvmXnGXo0tdLtoNGsWtebV3yN+DDrbOg5ofGupwIDAQAB",
   "permissions": ["identity", "storage", "tabs", "scripting"],
   "host_permissions": [
-    "https://nuvohub.ca/*",
-    "https://firestore.googleapis.com/*",
+    "https://your-crm.example.com/*",
+    "https://your-document-api.example.com/*",
     "https://sheets.googleapis.com/*",
     "https://www.googleapis.com/*"
   ],
@@ -21,7 +21,7 @@
   },
 
   "oauth2": {
-    "client_id": "1054789399000-8dq52k9rve5tdte3qjsiasiv34jo0j7o.apps.googleusercontent.com",
+    "client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive.file"
